@@ -11,29 +11,21 @@ ZOOM = 0
 TARGETS = {}
 
 function ConvertToLocalCoordinates(target)
-    local function RotationMatrix(yaw, pitch, roll)
-        local alpha = pitch
-        local beta = yaw
-        local gamma = roll
-        return {
-            { math.cos(alpha) * math.cos(beta),
-                math.cos(alpha) * math.sin(beta) * math.sin(gamma) - math.sin(alpha) * math.cos(gamma),
-                math.cos(alpha) * math.sin(beta) * math.cos(gamma) + math.sin(alpha) * math.sin(gamma) },
-            { math.sin(alpha) * math.cos(beta),
-                math.sin(alpha) * math.sin(beta) * math.sin(gamma) + math.cos(alpha) * math.cos(gamma),
-                math.sin(alpha) * math.sin(beta) * math.cos(gamma) - math.cos(alpha) * math.sin(gamma) },
-            { -math.sin(beta), math.cos(beta) * math.sin(gamma), math.cos(beta) * math.cos(gamma) },
-            mul = function(self, v)
-                return {
-                    X = self[1][1] * v.X + self[1][2] * v.Y + self[1][3] * v.Z,
-                    Y = self[2][1] * v.X + self[2][2] * v.Y + self[2][3] * v.Z,
-                    Z = self[3][1] * v.X + self[3][2] * v.Y + self[3][3] * v.Z
-                }
-            end
-        }
-    end
+    local rotMatrix = {
+        { math.cos(PITCH) * math.cos(YAW),
+            math.cos(PITCH) * math.sin(YAW) * math.sin(ROLL) - math.sin(PITCH) * math.cos(ROLL),
+            math.cos(PITCH) * math.sin(YAW) * math.cos(ROLL) + math.sin(PITCH) * math.sin(ROLL) },
+        { math.sin(PITCH) * math.cos(YAW),
+            math.sin(PITCH) * math.sin(YAW) * math.sin(ROLL) + math.cos(PITCH) * math.cos(ROLL),
+            math.sin(PITCH) * math.sin(YAW) * math.cos(ROLL) - math.cos(PITCH) * math.sin(ROLL) },
+        { -math.sin(YAW), math.cos(YAW) * math.sin(ROLL), math.cos(YAW) * math.cos(ROLL) },
+    }
 
-    return RotationMatrix(YAW, PITCH, ROLL):mul(target)
+    return {
+        X = (rotMatrix[1][1] * target.X) + (rotMatrix[1][2] * target.Y) + (rotMatrix[1][3] * target.Z),
+        Y = (rotMatrix[2][1] * target.X) + (rotMatrix[2][2] * target.Y) + (rotMatrix[2][3] * target.Z),
+        Z = (rotMatrix[3][1] * target.X) + (rotMatrix[3][2] * target.Y) + (rotMatrix[3][3] * target.Z)
+    }
 end
 
 TIMEOUT = 60 * 5
