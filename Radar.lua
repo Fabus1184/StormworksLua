@@ -10,6 +10,25 @@ ZOOM = 0
 
 TARGETS = {}
 
+function GPSDistance(t1, t2)
+    local dx = t1.X - t2.X
+    local dy = t1.Y - t2.Y
+    local dz = t1.Z - t2.Z
+    return math.sqrt((dx * dx) + (dy * dy) + (dz * dz))
+end
+
+DELTA = 20
+function ProcessNewTarget(newTarget)
+    for _, target in pairs(TARGETS) do
+        if (GPSDistance(target, newTarget) < DELTA) then
+            target.X = (target.X + newTarget.X) / 2
+            target.Y = (target.Y + newTarget.Y) / 2
+            return
+        end
+    end
+    table.insert(TARGETS, newTarget)
+end
+
 function ConvertToLocalCoordinates(target)
     local rotMatrix = {
         { math.cos(PITCH) * math.cos(YAW),
@@ -37,11 +56,11 @@ function onTick()
     ROLL = input.getNumber(31) * 2 * math.pi
     ZOOM = input.getNumber(32)
 
-    for i = 1, 6 do
+    for i = 1, 5 do
         if (input.getBool(i)) then
-            local distance = input.getNumber((i * 4))
-            local azimuth = (math.pi / 2) + (2 * math.pi * input.getNumber((i * 4) + 1))
-            local elevation = (math.pi / 2) + (math.pi * input.getNumber((i * 4) + 2))
+            local distance = input.getNumber((i * 4) - 3)
+            local azimuth = (math.pi / 2) + (2 * math.pi * input.getNumber((i * 4) - 2))
+            local elevation = (math.pi / 2) + (math.pi * input.getNumber((i * 4) - 1))
 
             local Z = math.sin(elevation) * distance
             local Y = math.sin(-azimuth) * distance
@@ -52,12 +71,13 @@ function onTick()
                 Y = Y,
                 Z = Z
             })
+
             target.X = target.X + BASE_GPS_X
             target.Y = target.Y + BASE_GPS_Y
             target.lastUpdate = 0
             target.distance = distance
 
-            table.insert(TARGETS, target)
+            ProcessNewTarget(target)
         else
             break
         end
@@ -76,16 +96,9 @@ function onDraw()
     local w = screen.getWidth()
     local h = screen.getHeight()
 
-    for _, target in pairs(TARGETS) do
-        local mapX, mapY = map.mapToScreen(BASE_GPS_X, BASE_GPS_Y, ZOOM, w, h, target.X, target.Y)
-        screen.setColor(255, 0, 0)
-        screen.drawCircle(mapX, mapY, 1)
-    end
-
     screen.setColor(255, 255, 255)
     screen.drawText(0, 0, "ZOOM: " .. tostring(math.ceil(ZOOM)))
     screen.drawText(0, 8, "TRACKING " .. tostring(#TARGETS) .. " TANGOS")
-
     local maxDistance = 0
     for _, target in pairs(TARGETS) do
         if (target.distance > maxDistance) then
@@ -93,12 +106,14 @@ function onDraw()
         end
     end
     screen.drawText(0, 16, "MAX DISTANCE: " .. tostring(math.ceil(maxDistance)) .. "m")
+    screen.drawText(w / 2, 4, "N")
+    screen.drawText(w / 2, h - 8, "S")
+    screen.drawText(4, h / 2, "W")
+    screen.drawText(w - 8, h / 2, "E")
 
-    local maxZ = 0
     for _, target in pairs(TARGETS) do
-        if (target.Z > maxZ) then
-            maxZ = target.Z
-        end
+        local mapX, mapY = map.mapToScreen(BASE_GPS_X, BASE_GPS_Y, ZOOM, w, h, target.X, target.Y)
+        screen.setColor(255, 0, 0)
+        screen.drawRect(mapX, mapY, 2, 2)
     end
-    screen.drawText(0, 24, "MAX ALTITUDE: " .. tostring(math.ceil(maxZ)) .. "m")
 end
