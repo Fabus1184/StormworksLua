@@ -39,4 +39,11 @@ function onDraw()
         (w / 2) + (10 * math.cos(BASE_HEADING_ABSOLUTE)),
         (h / 2) - (10 * math.sin(BASE_HEADING_ABSOLUTE))
     )
+
+    local worldX, _ = map.screenToMap(BASE_GPS_X, BASE_GPS_Y, ZOOM, w, h, (w / 2) + 50, (h / 2))
+    local distance = math.abs(worldX - BASE_GPS_X)
+    screen.setColor(255, 255, 255)
+    screen.drawLine(0, h - 8 - 5, 50, h - 8 - 5)
+    screen.drawText(0, h - 8, tostring(math.ceil(distance / 1000)) .. "km")
+
 end
